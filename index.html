@@ -103,7 +103,8 @@
     <div class="max-w-6xl mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden border border-stone-200">
         <!-- Header -->
         <div class="bg-amber-900 p-8 text-white text-center">
-            <h1 class="text-3xl md:text-4xl font-black tracking-tight tracking-widest uppercase">ウクレレコードマスター</h1>
+            <h1 class="text-3xl md:text-4xl font-black tracking-tight tracking-widest uppercase">Ukulele Chord Master</h1>
+            <p class="text-amber-200 text-sm mt-2 font-bold opacity-80">Simple 3x4 Grid Logic Diagram</p>
         </div>
 
         <div class="flex flex-col lg:flex-row">
@@ -158,11 +159,22 @@
         const roots = ["C", "D", "E", "F", "G", "A", "B"];
         let currentRootName = "C";
 
-        // ウクレレの指板データ (1弦から4弦)
+        // ウクレレの基準運指 (1弦, 2弦, 3弦, 4弦) ※Cルート基準での相対フレット
+        // 修正: 6, M7, 7, m7 などのパターンを正確なウクレレフォームに修正
         const baseFingerings = {
-            "": [3,0,0,0], "m": [3,3,3,0], "aug": [3,0,0,1], "dim": [3,2,3,2], "sus4": [3,1,0,0],
-            "7": [1,0,0,0], "M7": [2,0,0,0], "m7": [1,1,0,0], "m7-5": [3,2,3,3], "6": [0,0,0,0],
-            "add9": [3,0,2,0], "9": [1,1,2,0], "69": [3,3,2,2]
+            "": [3,0,0,0],      // C
+            "m": [3,3,3,0],     // Cm
+            "aug": [3,0,0,1],   // Caug
+            "dim": [3,2,3,2],   // Cdim
+            "sus4": [3,1,0,0],  // Csus4
+            "7": [1,0,0,0],     // C7
+            "M7": [2,0,0,0],    // CM7
+            "m7": [1,3,3,3],    // Cm7
+            "m7-5": [3,2,3,3],  // Cm7-5
+            "6": [0,0,0,0],     // C6 (ウクレレでは開放弦全てがC6)
+            "add9": [3,0,2,0],  // Cadd9
+            "9": [1,0,2,0],     // C9
+            "69": [3,3,2,2]     // C69
         };
 
         const recipes = [
@@ -193,6 +205,11 @@
                     document.querySelectorAll('.root-btn').forEach(b => b.classList.remove('root-active'));
                     btn.classList.add('root-active');
                     renderGrid();
+                    // 現在選択されているレシピで再描画
+                    const activeChordName = document.getElementById('chord-display-name').textContent;
+                    const currentSuffix = activeChordName.replace(currentRootName, "");
+                    const recipe = recipes.find(r => r.suffix === currentSuffix) || recipes[0];
+                    selectChord(recipe);
                 };
                 rootContainer.appendChild(btn);
             });
@@ -219,11 +236,21 @@
             const rootMap = {"C":0, "D":2, "E":4, "F":5, "G":7, "A":9, "B":11};
             const offset = rootMap[currentRootName];
             const base = baseFingerings[suffix];
+            
             return base.map(fret => {
-                if (fret === 0) return 0;
+                // 開放弦(0)の場合はルートの移動分を加算
                 let val = fret + offset;
-                while (val > 4) val -= 4; // 簡略化のため4フレット内に収める
-                return val === 0 ? 0 : val;
+                // ウクレレの一般的なローコード範囲に収めるための正規化
+                // 5フレット以上になる場合はオクターブ下げて調整を試みる
+                while (val > 4) {
+                    val -= 12;
+                }
+                while (val < 0) {
+                    val += 12;
+                }
+                // ローコードとして現実的な範囲(0-4)を超えた場合のフォールバック
+                if (val > 4) val = val % 5; 
+                return val;
             });
         }
 
@@ -258,14 +285,12 @@
             
             const startFret = 1;
 
-            // 3つの行（スペース）を生成
             for (let r = 0; r < 3; r++) {
                 for (let c = 0; c < 4; c++) {
                     const currentFret = startFret + c;
                     const cell = document.createElement('div');
                     cell.className = 'cell';
 
-                    // フレット番号（一番下の行のみ）
                     if (r === 2) {
                         const fNum = document.createElement('div');
                         fNum.className = 'fret-num';
@@ -273,26 +298,20 @@
                         cell.appendChild(fNum);
                     }
 
-                    // 開放弦マーク（左端、各弦の位置）
                     if (c === 0) {
-                        // 1, 2, 3弦
                         if (frets[r] === 0) {
                             addStatus(cell, '○', 'top');
                         }
-                        // 4弦（一番下）
                         if (r === 2 && frets[3] === 0) {
                             addStatus(cell, '○', 'bottom');
                         }
                     }
 
-                    // ドット（各弦の線の上）
-                    // 1, 2, 3弦
                     if (frets[r] === currentFret) {
                         const dot = document.createElement('div');
                         dot.className = 'dot';
                         cell.appendChild(dot);
                     }
-                    // 4弦（一番下の線の上）
                     if (r === 2 && frets[3] === currentFret) {
                         const dot = document.createElement('div');
                         dot.className = 'dot dot-bottom';
