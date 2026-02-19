@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ウクレレ・フルコード・プレイヤー</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .chord-btn {
+            transition: all 0.1s ease-out;
+        }
+        .chord-btn:active {
+            transform: scale(0.96);
+            background-color: #fef3c7;
+        }
+        .root-active {
+            background-color: #f59e0b !important;
+            color: white !important;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-stone-100 min-h-screen p-4 font-sans">
+
+    <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden border border-stone-200">
+        <!-- ヘッダー -->
+        <div class="bg-amber-700 p-6 text-white text-center">
+            <h1 class="text-2xl md:text-3xl font-bold">Ukulele Theory Player</h1>
+            <p class="text-amber-100 text-sm mt-1">構成音レシピを音で確認する</p>
+        </div>
+
+        <!-- ルート音選択 -->
+        <div class="p-6 bg-stone-50 border-b border-stone-200">
+            <h2 class="text-xs font-bold text-stone-500 uppercase tracking-widest mb-4 text-center">1. ルート音を選択</h2>
+            <div id="root-container" class="flex flex-wrap justify-center gap-2">
+                <!-- ルートボタンがJSで入る -->
+            </div>
+        </div>
+
+        <!-- コードグリッド -->
+        <div class="p-6">
+            <h2 class="text-xs font-bold text-stone-500 uppercase tracking-widest mb-4 text-center">2. コードをクリックして再生</h2>
+            
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3" id="chord-grid">
+                <!-- コードボタンがJSで入る -->
+            </div>
+        </div>
+
+        <!-- インフォメーション -->
+        <div id="display-panel" class="m-6 p-6 rounded-xl bg-amber-50 border-2 border-amber-100 text-center">
+            <div id="chord-display-name" class="text-3xl font-black text-amber-900 mb-2">コードを選んでください</div>
+            <div id="chord-formula-display" class="text-amber-700 font-mono text-lg font-bold">--</div>
+            <div id="notes-display" class="text-stone-600 mt-2 text-sm italic">構成音: --</div>
+            <div id="desc-display" class="text-stone-500 mt-4 text-xs leading-relaxed max-w-md mx-auto">--</div>
+        </div>
+    </div>
+
+    <script>
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        // 12音の周波数と名前
+        const noteBase = [
+            { name: "C", freq: 261.63 }, { name: "C#", freq: 277.18 },
+            { name: "D", freq: 293.66 }, { name: "D#", freq: 311.13 },
+            { name: "E", freq: 329.63 }, { name: "F", freq: 349.23 },
+            { name: "F#", freq: 369.99 }, { name: "G", freq: 392.00 },
+            { name: "G#", freq: 415.30 }, { name: "A", freq: 440.00 },
+            { name: "A#", freq: 466.16 }, { name: "B", freq: 493.88 }
+        ];
+
+        // ルート音リスト（白鍵のみ指定）
+        const roots = ["C", "D", "E", "F", "G", "A", "B"];
+        let currentRootIndex = 0;
+
+        // 全レシピ定義
+        const recipes = [
+            { suffix: "", name: "Major", formula: "1, 3, 5", offsets: [0, 4, 7], desc: "基本の明るい響き" },
+            { suffix: "m", name: "minor", formula: "1, b3, 5", offsets: [0, 3, 7], desc: "3度を半音下げた、悲しい響き" },
+            { suffix: "aug", name: "aug", formula: "1, 3, #5", offsets: [0, 4, 8], desc: "5度を半音上げた、不思議な響き" },
+            { suffix: "dim", name: "dim", formula: "1, b3, b5", offsets: [0, 3, 6], desc: "不安で緊迫した響き" },
+            { suffix: "sus4", name: "sus4", formula: "1, 4, 5", offsets: [0, 5, 7], desc: "3度を4度に置き換え。浮遊感がある" },
+            { suffix: "7", name: "7", formula: "1, 3, 5, b7", offsets: [0, 4, 7, 10], desc: "強い推進力。次へ進みたくなる" },
+            { suffix: "M7", name: "M7", formula: "1, 3, 5, 7", offsets: [0, 4, 7, 11], desc: "都会的、透明感のある響き" },
+            { suffix: "m7", name: "m7", formula: "1, b3, 5, b7", offsets: [0, 3, 7, 10], desc: "マイナーに切なさが加わった響き" },
+            { suffix: "m7-5", name: "m7-5", formula: "1, b3, b5, b7", offsets: [0, 3, 6, 10], desc: "非常に切なく、ジャズで多用" },
+            { suffix: "6", name: "6", formula: "1, 3, 5, 6", offsets: [0, 4, 7, 9], desc: "のんびりしたハワイアンな響き" },
+            { suffix: "add9", name: "add9", formula: "1, 3, 5, 9", offsets: [0, 4, 7, 14], desc: "キラキラした、広がりのある響き" },
+            { suffix: "9", name: "9", formula: "1, 3, 5, b7, 9", offsets: [0, 4, 7, 10, 14], desc: "ファンキーで厚みのある音" },
+            { suffix: "69", name: "69", formula: "1, 3, 5, 6, 9", offsets: [0, 4, 7, 9, 14], desc: "非常におしゃれな終わりのコード" }
+        ];
+
+        // UI初期化
+        const rootContainer = document.getElementById('root-container');
+        const chordGrid = document.getElementById('chord-grid');
+
+        roots.forEach((root, idx) => {
+            const btn = document.createElement('button');
+            btn.className = "root-btn w-12 h-12 rounded-full font-bold text-lg bg-white border-2 border-stone-300 text-stone-600 transition-all hover:border-amber-500";
+            btn.textContent = root;
+            if(idx === 0) btn.classList.add('root-active');
+            btn.onclick = () => {
+                currentRootIndex = noteBase.findIndex(n => n.name === root);
+                document.querySelectorAll('.root-btn').forEach(b => b.classList.remove('root-active'));
+                btn.classList.add('root-active');
+                updateChordButtons();
+            };
+            rootContainer.appendChild(btn);
+        });
+
+        function updateChordButtons() {
+            chordGrid.innerHTML = '';
+            const rootName = noteBase[currentRootIndex].name;
+            recipes.forEach(recipe => {
+                const btn = document.createElement('button');
+                btn.className = "chord-btn p-3 bg-white border border-stone-200 rounded-lg shadow-sm hover:shadow-md text-center";
+                btn.innerHTML = `
+                    <div class="font-black text-amber-900 text-lg">${rootName}${recipe.suffix}</div>
+                    <div class="text-[10px] text-stone-400 font-mono mt-1">${recipe.formula}</div>
+                `;
+                btn.onclick = () => playChord(recipe);
+                chordGrid.appendChild(btn);
+            });
+        }
+
+        updateChordButtons();
+
+        function playChord(recipe) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            const root = noteBase[currentRootIndex];
+            const now = audioCtx.currentTime;
+            
+            // 表示更新
+            document.getElementById('chord-display-name').textContent = root.name + recipe.suffix;
+            document.getElementById('chord-formula-display').textContent = recipe.formula;
+            document.getElementById('desc-display').textContent = recipe.desc;
+
+            const noteNamesDisplay = [];
+            
+            // 各音を再生
+            recipe.offsets.forEach((offset, i) => {
+                const freq = root.freq * Math.pow(2, offset / 12);
+                const strumDelay = i * 0.04; // ウクレレ風の時間差
+                
+                // 音名の計算
+                const nIdx = (currentRootIndex + offset) % 12;
+                noteNamesDisplay.push(noteBase[nIdx].name);
+                
+                playTone(freq, now + strumDelay);
+            });
+
+            document.getElementById('notes-display').textContent = `構成音: ${noteNamesDisplay.join(', ')}`;
+        }
+
+        function playTone(freq, startTime) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            // ウクレレに近い倍音を含む三角形波
+            osc.type = 'triangle';
+            
+            // エンベロープ（アタックとリリース）
+            gain.gain.setValueAtTime(0, startTime);
+            gain.gain.linearRampToValueAtTime(0.15, startTime + 0.01);
+            gain.gain.exponentialRampToValueAtTime(0.001, startTime + 1.5);
+
+            osc.frequency.setValueAtTime(freq, startTime);
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.start(startTime);
+            osc.stop(startTime + 1.6);
+        }
+    </script>
+</body>
+</html>
