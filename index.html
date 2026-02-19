@@ -18,47 +18,134 @@
             color: white !important;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
+        
+        /* ダイアグラム外枠: 左側がナット */
+        .diagram-wrapper {
+            position: relative;
+            padding: 20px 40px 40px 60px; /* 記号やラベル用の余白 */
+            background: white;
+            border-radius: 1rem;
+            display: inline-block;
+        }
+
+        /* 3行（弦間）× 4列（フレット）のグリッド */
+        .fretboard-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 70px);
+            grid-template-rows: repeat(3, 40px);
+            border-left: 12px solid #1a1a1a; /* ナット */
+            position: relative;
+        }
+        
+        .cell {
+            border-bottom: 2px solid #444; /* 弦 */
+            border-right: 3px solid #777;  /* フレット */
+            position: relative;
+        }
+
+        /* 1弦（一番上の弦）の線 */
+        .fretboard-grid::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            border-top: 2px solid #444;
+            z-index: 1;
+        }
+
+        /* 押さえる位置の丸 */
+        .dot {
+            width: 26px;
+            height: 26px;
+            background: #b45309;
+            border-radius: 50%;
+            position: absolute;
+            /* フレット線の真上、弦線の真上 */
+            right: -14.5px; 
+            top: -14px; 
+            z-index: 10;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            border: 2px solid #fff;
+        }
+        /* 一番下の弦（4弦）用の位置調整 */
+        .dot-bottom {
+            top: auto;
+            bottom: -14px;
+        }
+
+        /* 開放弦・ミュート記号（ナットの左、弦の延長線上） */
+        .string-status {
+            position: absolute;
+            left: -45px;
+            width: 30px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: 900;
+            color: #b45309;
+            z-index: 5;
+            line-height: 1;
+        }
+
+        /* フレット番号（下側、縦線の位置） */
+        .fret-num {
+            position: absolute;
+            bottom: -30px;
+            right: -10px;
+            font-size: 12px;
+            color: #78716c;
+            font-weight: bold;
+        }
     </style>
 </head>
-<body class="bg-stone-100 min-h-screen p-4 font-sans">
+<body class="bg-stone-100 min-h-screen p-4 font-sans text-stone-900">
 
-    <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden border border-stone-200">
-        <!-- ヘッダー -->
-        <div class="bg-amber-700 p-6 text-white text-center">
-            <h1 class="text-2xl md:text-3xl font-bold">Ukulele Theory Player</h1>
-            <p class="text-amber-100 text-sm mt-1">構成音レシピを音で確認する</p>
+    <div class="max-w-6xl mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden border border-stone-200">
+        <!-- Header -->
+        <div class="bg-amber-900 p-8 text-white text-center">
+            <h1 class="text-3xl md:text-4xl font-black tracking-tight tracking-widest uppercase">ウクレレコードマスター</h1>
         </div>
 
-        <!-- ルート音選択 -->
-        <div class="p-6 bg-stone-50 border-b border-stone-200">
-            <h2 class="text-xs font-bold text-stone-500 uppercase tracking-widest mb-4 text-center">1. ルート音を選択</h2>
-            <div id="root-container" class="flex flex-wrap justify-center gap-2">
-                <!-- ルートボタンがJSで入る -->
+        <div class="flex flex-col lg:flex-row">
+            <!-- Left: Selection -->
+            <div class="lg:w-7/12 border-r border-stone-100">
+                <div class="p-8 bg-stone-50 border-b border-stone-200">
+                    <h2 class="text-xs font-black text-amber-700 uppercase tracking-[0.2em] mb-6 text-center">Step 1: ルート音を選択</h2>
+                    <div id="root-container" class="flex flex-wrap justify-center gap-3"></div>
+                </div>
+
+                <div class="p-8 overflow-y-auto max-h-[550px]">
+                    <h2 class="text-xs font-black text-amber-700 uppercase tracking-[0.2em] mb-6 text-center">Step 2: コードタイプを選択</h2>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4" id="chord-grid"></div>
+                </div>
             </div>
-        </div>
 
-        <!-- コードグリッド -->
-        <div class="p-6">
-            <h2 class="text-xs font-bold text-stone-500 uppercase tracking-widest mb-4 text-center">2. コードをクリックして再生</h2>
-            
-            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3" id="chord-grid">
-                <!-- コードボタンがJSで入る -->
+            <!-- Right: Visualizer -->
+            <div class="lg:w-5/12 bg-orange-50/50 p-10 flex flex-col items-center justify-start min-h-[600px]">
+                <div id="display-panel" class="w-full text-center">
+                    <div id="chord-display-name" class="text-7xl font-black text-amber-950 mb-2">C</div>
+                    <div id="chord-formula-display" class="text-amber-600 font-mono text-xl font-bold mb-8 italic">1, 3, 5</div>
+                    
+                    <div class="w-24 h-1 bg-amber-200 mx-auto mb-10 rounded-full"></div>
+
+                    <!-- Diagram -->
+                    <div class="diagram-wrapper shadow-lg border border-stone-200">
+                        <div id="diagram-grid" class="fretboard-grid">
+                            <!-- JS injects 12 cells (3 rows x 4 columns) -->
+                        </div>
+                    </div>
+
+                    <div class="mt-14">
+                        <div id="notes-display" class="bg-white border-2 border-amber-200 py-3 px-8 rounded-2xl text-amber-900 font-black text-xl shadow-sm inline-block">構成音: ド, ミ, ソ</div>
+                    </div>
+                </div>
             </div>
-        </div>
-
-        <!-- インフォメーション -->
-        <div id="display-panel" class="m-6 p-6 rounded-xl bg-amber-50 border-2 border-amber-100 text-center">
-            <div id="chord-display-name" class="text-3xl font-black text-amber-900 mb-2">コードを選んでください</div>
-            <div id="chord-formula-display" class="text-amber-700 font-mono text-lg font-bold">--</div>
-            <div id="notes-display" class="text-stone-600 mt-2 text-sm italic">構成音: --</div>
-            <div id="desc-display" class="text-stone-500 mt-4 text-xs leading-relaxed max-w-md mx-auto">--</div>
         </div>
     </div>
 
     <script>
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-        // 12音の周波数と名前
         const noteBase = [
             { name: "C", freq: 261.63 }, { name: "C#", freq: 277.18 },
             { name: "D", freq: 293.66 }, { name: "D#", freq: 311.13 },
@@ -68,110 +155,182 @@
             { name: "A#", freq: 466.16 }, { name: "B", freq: 493.88 }
         ];
 
-        // ルート音リスト（白鍵のみ指定）
         const roots = ["C", "D", "E", "F", "G", "A", "B"];
-        let currentRootIndex = 0;
+        let currentRootName = "C";
 
-        // 全レシピ定義
+        // ウクレレの指板データ (1弦から4弦)
+        const baseFingerings = {
+            "": [3,0,0,0], "m": [3,3,3,0], "aug": [3,0,0,1], "dim": [3,2,3,2], "sus4": [3,1,0,0],
+            "7": [1,0,0,0], "M7": [2,0,0,0], "m7": [1,1,0,0], "m7-5": [3,2,3,3], "6": [0,0,0,0],
+            "add9": [3,0,2,0], "9": [1,1,2,0], "69": [3,3,2,2]
+        };
+
         const recipes = [
-            { suffix: "", name: "Major", formula: "1, 3, 5", offsets: [0, 4, 7], desc: "基本の明るい響き" },
-            { suffix: "m", name: "minor", formula: "1, b3, 5", offsets: [0, 3, 7], desc: "3度を半音下げた、悲しい響き" },
-            { suffix: "aug", name: "aug", formula: "1, 3, #5", offsets: [0, 4, 8], desc: "5度を半音上げた、不思議な響き" },
-            { suffix: "dim", name: "dim", formula: "1, b3, b5", offsets: [0, 3, 6], desc: "不安で緊迫した響き" },
-            { suffix: "sus4", name: "sus4", formula: "1, 4, 5", offsets: [0, 5, 7], desc: "3度を4度に置き換え。浮遊感がある" },
-            { suffix: "7", name: "7", formula: "1, 3, 5, b7", offsets: [0, 4, 7, 10], desc: "強い推進力。次へ進みたくなる" },
-            { suffix: "M7", name: "M7", formula: "1, 3, 5, 7", offsets: [0, 4, 7, 11], desc: "都会的、透明感のある響き" },
-            { suffix: "m7", name: "m7", formula: "1, b3, 5, b7", offsets: [0, 3, 7, 10], desc: "マイナーに切なさが加わった響き" },
-            { suffix: "m7-5", name: "m7-5", formula: "1, b3, b5, b7", offsets: [0, 3, 6, 10], desc: "非常に切なく、ジャズで多用" },
-            { suffix: "6", name: "6", formula: "1, 3, 5, 6", offsets: [0, 4, 7, 9], desc: "のんびりしたハワイアンな響き" },
-            { suffix: "add9", name: "add9", formula: "1, 3, 5, 9", offsets: [0, 4, 7, 14], desc: "キラキラした、広がりのある響き" },
-            { suffix: "9", name: "9", formula: "1, 3, 5, b7, 9", offsets: [0, 4, 7, 10, 14], desc: "ファンキーで厚みのある音" },
-            { suffix: "69", name: "69", formula: "1, 3, 5, 6, 9", offsets: [0, 4, 7, 9, 14], desc: "非常におしゃれな終わりのコード" }
+            { suffix: "", formula: "1, 3, 5", offsets: [0, 4, 7] },
+            { suffix: "m", formula: "1, ♭3, 5", offsets: [0, 3, 7] },
+            { suffix: "aug", formula: "1, 3, #5", offsets: [0, 4, 8] },
+            { suffix: "dim", formula: "1, ♭3, ♭5", offsets: [0, 3, 6] },
+            { suffix: "sus4", formula: "1, 4, 5", offsets: [0, 5, 7] },
+            { suffix: "7", formula: "1, 3, 5, ♭7", offsets: [0, 4, 7, 10] },
+            { suffix: "M7", formula: "1, 3, 5, 7", offsets: [0, 4, 7, 11] },
+            { suffix: "m7", formula: "1, ♭3, 5, ♭7", offsets: [0, 3, 7, 10] },
+            { suffix: "m7-5", formula: "1, ♭3, ♭5, ♭7", offsets: [0, 3, 6, 10] },
+            { suffix: "6", formula: "1, 3, 5, 6", offsets: [0, 4, 7, 9] },
+            { suffix: "add9", formula: "1, 3, 5, 9", offsets: [0, 4, 7, 14] },
+            { suffix: "9", formula: "1, 3, 5, ♭7, 9", offsets: [0, 4, 7, 10, 14] },
+            { suffix: "69", formula: "1, 3, 5, 6, 9", offsets: [0, 4, 7, 9, 14] }
         ];
 
-        // UI初期化
-        const rootContainer = document.getElementById('root-container');
-        const chordGrid = document.getElementById('chord-grid');
+        function init() {
+            const rootContainer = document.getElementById('root-container');
+            roots.forEach(root => {
+                const btn = document.createElement('button');
+                btn.className = `root-btn w-14 h-14 rounded-2xl font-black bg-white border-2 border-stone-200 text-stone-400 hover:border-amber-400 hover:text-amber-600 transition-all`;
+                btn.textContent = root;
+                if(root === currentRootName) btn.classList.add('root-active');
+                btn.onclick = () => {
+                    currentRootName = root;
+                    document.querySelectorAll('.root-btn').forEach(b => b.classList.remove('root-active'));
+                    btn.classList.add('root-active');
+                    renderGrid();
+                };
+                rootContainer.appendChild(btn);
+            });
+            renderGrid();
+            selectChord(recipes[0]);
+        }
 
-        roots.forEach((root, idx) => {
-            const btn = document.createElement('button');
-            btn.className = "root-btn w-12 h-12 rounded-full font-bold text-lg bg-white border-2 border-stone-300 text-stone-600 transition-all hover:border-amber-500";
-            btn.textContent = root;
-            if(idx === 0) btn.classList.add('root-active');
-            btn.onclick = () => {
-                currentRootIndex = noteBase.findIndex(n => n.name === root);
-                document.querySelectorAll('.root-btn').forEach(b => b.classList.remove('root-active'));
-                btn.classList.add('root-active');
-                updateChordButtons();
-            };
-            rootContainer.appendChild(btn);
-        });
-
-        function updateChordButtons() {
-            chordGrid.innerHTML = '';
-            const rootName = noteBase[currentRootIndex].name;
+        function renderGrid() {
+            const grid = document.getElementById('chord-grid');
+            grid.innerHTML = '';
             recipes.forEach(recipe => {
                 const btn = document.createElement('button');
-                btn.className = "chord-btn p-3 bg-white border border-stone-200 rounded-lg shadow-sm hover:shadow-md text-center";
+                btn.className = "chord-btn p-4 bg-white border-2 border-stone-100 rounded-2xl shadow-sm hover:shadow-md text-center";
                 btn.innerHTML = `
-                    <div class="font-black text-amber-900 text-lg">${rootName}${recipe.suffix}</div>
-                    <div class="text-[10px] text-stone-400 font-mono mt-1">${recipe.formula}</div>
+                    <div class="font-black text-amber-900 text-xl">${currentRootName}${recipe.suffix}</div>
+                    <div class="text-[10px] text-stone-400 font-bold font-mono mt-1">${recipe.formula}</div>
                 `;
-                btn.onclick = () => playChord(recipe);
-                chordGrid.appendChild(btn);
+                btn.onclick = () => selectChord(recipe);
+                grid.appendChild(btn);
             });
         }
 
-        updateChordButtons();
-
-        function playChord(recipe) {
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            
-            const root = noteBase[currentRootIndex];
-            const now = audioCtx.currentTime;
-            
-            // 表示更新
-            document.getElementById('chord-display-name').textContent = root.name + recipe.suffix;
-            document.getElementById('chord-formula-display').textContent = recipe.formula;
-            document.getElementById('desc-display').textContent = recipe.desc;
-
-            const noteNamesDisplay = [];
-            
-            // 各音を再生
-            recipe.offsets.forEach((offset, i) => {
-                const freq = root.freq * Math.pow(2, offset / 12);
-                const strumDelay = i * 0.04; // ウクレレ風の時間差
-                
-                // 音名の計算
-                const nIdx = (currentRootIndex + offset) % 12;
-                noteNamesDisplay.push(noteBase[nIdx].name);
-                
-                playTone(freq, now + strumDelay);
+        function calculateFingering(suffix) {
+            const rootMap = {"C":0, "D":2, "E":4, "F":5, "G":7, "A":9, "B":11};
+            const offset = rootMap[currentRootName];
+            const base = baseFingerings[suffix];
+            return base.map(fret => {
+                if (fret === 0) return 0;
+                let val = fret + offset;
+                while (val > 4) val -= 4; // 簡略化のため4フレット内に収める
+                return val === 0 ? 0 : val;
             });
+        }
 
-            document.getElementById('notes-display').textContent = `構成音: ${noteNamesDisplay.join(', ')}`;
+        function selectChord(recipe) {
+            const rootIndex = noteBase.findIndex(n => n.name === currentRootName);
+            const root = noteBase[rootIndex];
+            
+            document.getElementById('chord-display-name').textContent = currentRootName + recipe.suffix;
+            document.getElementById('chord-formula-display').textContent = recipe.formula;
+
+            const noteNames = recipe.offsets.map(off => {
+                const noteIndex = (rootIndex + off) % 12;
+                const note = noteBase[noteIndex].name;
+                const map = {"C":"ド","C#":"C#","D":"レ","D#":"D#","E":"ミ","F":"ファ","F#":"F#","G":"ソ","G#":"G#","A":"ラ","A#":"A#","B":"シ"};
+                return map[note] || note;
+            });
+            document.getElementById('notes-display').textContent = `構成音: ${noteNames.join(', ')}`;
+
+            let frets = calculateFingering(recipe.suffix);
+            updateDiagram(frets);
+
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            recipe.offsets.forEach((off, i) => {
+                const freq = root.freq * Math.pow(2, off / 12);
+                playTone(freq, audioCtx.currentTime + (i * 0.05));
+            });
+        }
+
+        function updateDiagram(frets) {
+            const container = document.getElementById('diagram-grid');
+            container.innerHTML = '';
+            
+            const startFret = 1;
+
+            // 3つの行（スペース）を生成
+            for (let r = 0; r < 3; r++) {
+                for (let c = 0; c < 4; c++) {
+                    const currentFret = startFret + c;
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+
+                    // フレット番号（一番下の行のみ）
+                    if (r === 2) {
+                        const fNum = document.createElement('div');
+                        fNum.className = 'fret-num';
+                        fNum.textContent = currentFret + 'f';
+                        cell.appendChild(fNum);
+                    }
+
+                    // 開放弦マーク（左端、各弦の位置）
+                    if (c === 0) {
+                        // 1, 2, 3弦
+                        if (frets[r] === 0) {
+                            addStatus(cell, '○', 'top');
+                        }
+                        // 4弦（一番下）
+                        if (r === 2 && frets[3] === 0) {
+                            addStatus(cell, '○', 'bottom');
+                        }
+                    }
+
+                    // ドット（各弦の線の上）
+                    // 1, 2, 3弦
+                    if (frets[r] === currentFret) {
+                        const dot = document.createElement('div');
+                        dot.className = 'dot';
+                        cell.appendChild(dot);
+                    }
+                    // 4弦（一番下の線の上）
+                    if (r === 2 && frets[3] === currentFret) {
+                        const dot = document.createElement('div');
+                        dot.className = 'dot dot-bottom';
+                        cell.appendChild(dot);
+                    }
+
+                    container.appendChild(cell);
+                }
+            }
+        }
+
+        function addStatus(parent, char, pos) {
+            const el = document.createElement('div');
+            el.className = 'string-status';
+            el.textContent = char;
+            if (pos === 'top') {
+                el.style.top = '-9px';
+            } else {
+                el.style.bottom = '-9px';
+            }
+            parent.appendChild(el);
         }
 
         function playTone(freq, startTime) {
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
-
-            // ウクレレに近い倍音を含む三角形波
             osc.type = 'triangle';
-            
-            // エンベロープ（アタックとリリース）
             gain.gain.setValueAtTime(0, startTime);
             gain.gain.linearRampToValueAtTime(0.15, startTime + 0.01);
-            gain.gain.exponentialRampToValueAtTime(0.001, startTime + 1.5);
-
+            gain.gain.exponentialRampToValueAtTime(0.001, startTime + 1.2);
             osc.frequency.setValueAtTime(freq, startTime);
-            
             osc.connect(gain);
             gain.connect(audioCtx.destination);
-
             osc.start(startTime);
-            osc.stop(startTime + 1.6);
+            osc.stop(startTime + 1.3);
         }
+
+        init();
     </script>
 </body>
 </html>
